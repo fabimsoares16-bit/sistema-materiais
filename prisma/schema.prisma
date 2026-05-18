@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// HIERARQUIA: Disciplina → Grupo → Família
+// ============================================
+
+model Disciplina {
+  id        Int      @id @default(autoincrement())
+  codigo    String   @unique @db.VarChar(10)
+  nome      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  grupos Grupo[]
+
+  @@map("disciplinas")
+}
+
+model Grupo {
+  id           Int        @id @default(autoincrement())
+  disciplinaId Int        @map("disciplina_id")
+  codigo       String     @db.VarChar(10)
+  nome         String     @db.VarChar(100)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  disciplina Disciplina @relation(fields: [disciplinaId], references: [id])
+  familias   Familia[]
+
+  @@unique([disciplinaId, codigo])
+  @@map("grupos")
+}
+
+model Familia {
+  id                 Int      @id @default(autoincrement())
+  grupoId            Int      @map("grupo_id")
+  codigo             String   @unique @db.VarChar(4)
+  nome               String   @db.VarChar(100)
+  proximoSequencial  Int      @default(1) @map("proximo_sequencial")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  grupo     Grupo      @relation(fields: [grupoId], references: [id])
+  materiais Material[]
+
+  @@map("familias")
+}
+
+// ============================================
+// MATERIAL — item com código auto-gerado
+// ============================================
+
+model Material {
+  id              Int      @id @default(autoincrement())
+  familiaId       Int      @map("familia_id")
+  codigo          String   @unique @db.VarChar(20)
+
+  // Descritivos em 3 idiomas
+  descCurtoPt     String?  @map("desc_curto_pt") @db.VarChar(255)
+  descLongoPt     String?  @map("desc_longo_pt") @db.Text
+  descCurtoEn     String?  @map("desc_curto_en") @db.VarChar(255)
+  descLongoEn     String?  @map("desc_longo_en") @db.Text
+  descCurtoEs     String?  @map("desc_curto_es") @db.VarChar(255)
+  descLongoEs     String?  @map("desc_longo_es") @db.Text
+
+  // Atributos técnicos
+  unidade         String?  @db.VarChar(10)
+  peso            Decimal? @db.Decimal(10, 4)
+
+  // Controle
+  status          String   @default("ATIVO") @db.VarChar(20)
+  createdBy       String?  @map("created_by") @db.VarChar(100)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  familia Familia @relation(fields: [familiaId], references: [id])
+
+  @@map("materiais")
+}
